@@ -8,14 +8,29 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
+library(dplyr)
 ```
 
 ## data sources
 
-# I am using two main data sources. The first is PIT and HIC count data from HUD. The specific data table used was created in excel by me. The second data sources comes from California's HDIS data and is directly queried from their website
+I am using two main data sources. The first is PIT and HIC count data from HUD. The specific data table used was created in excel by me. The second data sources comes from California's HDIS data and is directly queried from their website
 
 ```{r reading data}
 PITdata <- read_excel("PIT count data 2019 to 2023.xlsx")
 
 HDISdata <- read.csv("https://data.ca.gov/dataset/c7ed1ae4-4f93-4fc7-b603-3cd07a55d862/resource/b1a5ae24-5842-425c-b56c-aa90f8f1c767/download/homelessness-count-by-age.csv")
 ```
+
+the PITdata is already ready to use, but I want to simplify my HDIS data by combining all the ages tranches into a total count. I will also match the years in the `PITdata` so that I can join the two datasets together
+```{r}
+HDISdata$EXPERIENCING_HOMELESSNESS_CNT <- as.numeric(HDISdata$EXPERIENCING_HOMELESSNESS_CNT) # making the count a numeric vector instead of a character vector
+
+HDISdata <-HDISdata %>%
+    mutate(EXPERIENCING_HOMELESSNESS_CNT = ifelse(is.na(EXPERIENCING_HOMELESSNESS_CNT),0, EXPERIENCING_HOMELESSNESS_CNT))
+
+HDISyearlytotals <- HDISdata %>%
+    group_by(CALENDAR_YEAR, LOCATION_ID, LOCATION) %>%
+    summarise(total_count = sum(EXPERIENCING_HOMELESSNESS_CNT))
+View(HDISyearlytotals)
+```
+
