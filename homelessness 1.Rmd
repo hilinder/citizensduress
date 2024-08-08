@@ -7,24 +7,15 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
 ```
 
-## R Markdown
+## data sources
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# I am using two main data sources. The first is PIT and HIC count data from HUD. The specific data table used was created in excel by me. The second data sources comes from California's HDIS data and is directly queried from their website
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r reading data}
+PITdata <- read_excel("PIT count data 2019 to 2023.xlsx")
 
-```{r cars}
-summary(cars)
+HDISdata <- read.csv("https://data.ca.gov/dataset/c7ed1ae4-4f93-4fc7-b603-3cd07a55d862/resource/b1a5ae24-5842-425c-b56c-aa90f8f1c767/download/homelessness-count-by-age.csv")
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
