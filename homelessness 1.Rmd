@@ -21,8 +21,29 @@ PITdata <- read_excel("PIT count data 2019 to 2023.xlsx")
 HDISdata <- read.csv("https://data.ca.gov/dataset/c7ed1ae4-4f93-4fc7-b603-3cd07a55d862/resource/b1a5ae24-5842-425c-b56c-aa90f8f1c767/download/homelessness-count-by-age.csv")
 ```
 
-the PITdata is already ready to use, but I want to simplify my HDIS data by combining all the ages tranches into a total count. I will also match the years in the `PITdata` so that I can join the two datasets together
-```{r}
+```{r adding pit count totals}
+pittotals <- PITdata %>%
+    group_by(year) %>%
+    summarise(`Overall Homeless` = sum(`Overall Homeless`), 
+              `Sheltered Total Homeless` = sum(`Sheltered Total Homeless`),
+              `Unsheltered Homeless` = sum(`Unsheltered Homeless`),
+              `Total Year-Round Beds (ES, TH, SH)` = sum(`Total Year-Round Beds (ES, TH, SH)`),
+              `Total Year-Round Beds (RRH)` = sum(`Total Year-Round Beds (RRH)`),
+              `Total Year-Round Beds (PSH)` = sum(`Total Year-Round Beds (PSH)`),
+              `Total Year-Round Beds (OPH)` = sum(`Total Year-Round Beds (OPH)`)
+              ) %>%
+            ungroup()
+
+PITdata <- bind_rows(PITdata, pittotals) 
+ 
+PITdata <- PITdata %>%
+    mutate(`CoC Name` = ifelse(is.na(`CoC Name`), "California", `CoC Name`), `CoC Number` = ifelse(is.na(`CoC Number`), "All", `CoC Number`))
+
+```
+
+
+the PITdata is already ready to use, but I want to simplify my HDIS data by combining all the ages tranches into a total count. I will also match the years in the `PITdata` so that I can join the two datasets together.
+```{r summarizing HDIS data}
 HDISdata$EXPERIENCING_HOMELESSNESS_CNT <- as.numeric(HDISdata$EXPERIENCING_HOMELESSNESS_CNT) # making the count a numeric vector instead of a character vector
 
 HDISdata <-HDISdata %>%
@@ -30,7 +51,24 @@ HDISdata <-HDISdata %>%
 
 HDISyearlytotals <- HDISdata %>%
     group_by(CALENDAR_YEAR, LOCATION_ID, LOCATION) %>%
-    summarise(total_count = sum(EXPERIENCING_HOMELESSNESS_CNT))
+    summarise(hdistotal_count = sum(EXPERIENCING_HOMELESSNESS_CNT))
 View(HDISyearlytotals)
+```
+
+joining hdis data with pit data
+
+```{r joining pit and hdis}
+PITdata <- PITdata %>%
+    rename( LOCATION_ID = `CoC Number`)
+
+HDISyearlytotals <- HDISyearlytotals %>%
+    rename(year = CALENDAR_YEAR)
+
+PITandHDIS <- PITdata %>%
+    left_join(HDISyearlytotals[,c("year", "LOCATION_ID", "hdistotal_count")], by = c("year", "LOCATION_ID"))
+View(PITandHDIS)
+    
+PITandHDIS <- PITandHDIS %>%
+    select(-starts_with("..."))
 ```
 
