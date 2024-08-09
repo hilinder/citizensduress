@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(readxl)
 library(dplyr)
 library(ggplot2)
+library(reshape2)
 ```
 
 ## data sources
@@ -71,6 +72,13 @@ PITandHDIS <- PITandHDIS %>%
     select(-starts_with("..."))
 
 PITandHDIS <- PITandHDIS %>%
+    select(-`Count Types`)
+
+PITandHDIS <- PITandHDIS %>%
+    mutate(total_permanent_housing = `Total Year-Round Beds (OPH)` + `Total Year-Round Beds (RRH)` + `Total Year-Round Beds (PSH)`)
+
+
+PITandHDIS <- PITandHDIS %>%
     rename(pittotal_count = `Overall Homeless`)
 ```
 
@@ -94,3 +102,136 @@ ggplot(PITandHDIS[PITandHDIS$LOCATION_ID == "All", ]) +
   scale_fill_manual(name = "Count Type", values = c("hdistotal_count" = "yellow", "pittotal_count" = "blue"))
 
 ```
+
+plotting Homelessness for San Francisco
+```{r san francisco numbers}
+ggplot(PITandHDIS[PITandHDIS$LOCATION_ID == "CA-501", ]) +
+  geom_bar(aes(x = year, y = hdistotal_count, fill = "hdistotal_count"), 
+           stat = "identity", position = "dodge") +
+  geom_text(aes(x = year, y = hdistotal_count, label = hdistotal_count), 
+            position = position_dodge(width = 0.9), vjust = -0.8) +
+  geom_bar(aes(x = year, y = pittotal_count, fill = "pittotal_count"), 
+           stat = "identity", position = "dodge") +
+  geom_text(aes(x = year, y = pittotal_count, label = pittotal_count), 
+            position = position_dodge(width = 0.9), vjust = -0.3) +
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "San Francisco Homeless Population Counts Over Time"
+  ) +
+  scale_fill_manual(name = "Count Type", values = c("hdistotal_count" = "yellow", "pittotal_count" = "blue"))
+```
+Sacramento
+```{r}
+ggplot(PITandHDIS[PITandHDIS$LOCATION_ID == "CA-503", ]) +
+  geom_bar(aes(x = year, y = hdistotal_count, fill = "hdistotal_count"), 
+           stat = "identity", position = "dodge") +
+  geom_text(aes(x = year, y = hdistotal_count, label = hdistotal_count), 
+            position = position_dodge(width = 0.9), vjust = -0.3) +
+  geom_bar(aes(x = year, y = pittotal_count, fill = "pittotal_count"), 
+           stat = "identity", position = "dodge") +
+  geom_text(aes(x = year, y = pittotal_count, label = pittotal_count), 
+            position = position_dodge(width = 0.9), vjust = -0.3) +
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "Sacramento Homeless Population Counts Over Time"
+  ) +
+  scale_fill_manual(name = "Count Type", values = c("hdistotal_count" = "yellow", "pittotal_count" = "blue"))
+```
+Los Angeles
+```{r}
+ggplot(PITandHDIS[PITandHDIS$LOCATION_ID == "CA-600", ]) +
+  geom_bar(aes(x = year, y = hdistotal_count, fill = "hdistotal_count"), 
+           stat = "identity", position = "dodge") +
+  geom_text(aes(x = year, y = hdistotal_count, label = hdistotal_count), 
+            position = position_dodge(width = 0.9), vjust = -0.3) +
+  geom_bar(aes(x = year, y = pittotal_count, fill = "pittotal_count"), 
+           stat = "identity", position = "dodge") +
+  geom_text(aes(x = year, y = pittotal_count, label = pittotal_count), 
+            position = position_dodge(width = 0.9), vjust = -0.3) +
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "Los Angeles Homeless Population Counts Over Time"
+  ) +
+  scale_fill_manual(name = "Count Type", values = c("hdistotal_count" = "yellow", "pittotal_count" = "blue"))
+```
+`
+```{r long data}
+longPITandHDIS <- melt(PITandHDIS,
+id.vars = c("year", "LOCATION_ID", "CoC Name"),
+measure.vars = c("hdistotal_count","pittotal_count", "Unsheltered Homeless", "Sheltered Total Homeless",  "Total Year-Round Beds (ES, TH, SH)", "total_permanent_housing"),
+variable.name = "Count_Type",
+value.name = "Count")
+```
+
+```{r}
+ggplot(longPITandHDIS[longPITandHDIS$LOCATION_ID == "All",], aes(x = year, y = Count, fill = Count_Type)) +
+  geom_bar(stat = "identity", position = position_dodge()) +  # Dodge bars side by side
+  geom_text(aes(label = Count), 
+            position = position_dodge(width = 0.9), vjust = -0.3, size = 2.5) +  # Add labels above bars
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "California Homeless Population Counts Over Time"
+  ) 
+
+ggplot(longPITandHDIS[longPITandHDIS$LOCATION_ID == "All",], aes(x = factor(year), y = Count, color = Count_Type, group = Count_Type)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+  geom_text(aes(label = Count), 
+            size = 2.5, vjust = -0.5, hjust = 0.5) +  # Add labels to points
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "California Homeless Population Counts Over Time"
+  )
+```
+```{r}
+ggplot(longPITandHDIS[longPITandHDIS$LOCATION_ID == "CA-501",], aes(x = year, y = Count, fill = Count_Type)) +
+  geom_bar(stat = "identity", position = position_dodge()) +  # Dodge bars side by side
+  geom_text(aes(label = Count), 
+            position = position_dodge(width = 0.9), vjust = -0.3, size = 2.5) +  # Add labels above bars
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "SF Homeless Population Counts Over Time"
+  ) 
+
+ggplot(longPITandHDIS[longPITandHDIS$LOCATION_ID == "CA-501",], aes(x = factor(year), y = Count, color = Count_Type, group = Count_Type)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+  geom_text(aes(label = Count), 
+            size = 2.5, vjust = -0.5, hjust = 0.5) +  # Add labels to points
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "SF Homeless Population Counts Over Time"
+  )
+```
+```{r}
+ggplot(longPITandHDIS[longPITandHDIS$LOCATION_ID == "CA-503",], aes(x = factor(year), y = Count, color = Count_Type, group = Count_Type)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+  geom_text(aes(label = Count), 
+            size = 2.5, vjust = -0.5, hjust = 0.5) +  # Add labels to points
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "Sac Homeless Population Counts Over Time"
+  )
+```
+```{r}
+ggplot(longPITandHDIS[longPITandHDIS$LOCATION_ID == "CA-600",], aes(x = factor(year), y = Count, color = Count_Type, group = Count_Type)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+  geom_text(aes(label = Count), 
+            size = 2.5, vjust = -0.5, hjust = 0.5) +  # Add labels to points
+  labs(
+    x = "Year",
+    y = "Count",
+    title = "LA Homeless Population Counts Over Time"
+  )
+```
+
