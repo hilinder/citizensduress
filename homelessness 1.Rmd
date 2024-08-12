@@ -234,4 +234,47 @@ ggplot(longPITandHDIS[longPITandHDIS$LOCATION_ID == "CA-600",], aes(x = factor(y
     title = "LA Homeless Population Counts Over Time"
   )
 ```
+change over time
+```{r}
+PITandHDISchange <- PITandHDIS %>%
+    group_by(LOCATION_ID) %>%
+    filter(year == min(year) | year == max(year)) %>%
+    summarise(pit_change = pittotal_count[year == max(year)] - pittotal_count[year == min(year)],
+              pit_pct_change = (pittotal_count[year == max(year)] - pittotal_count[year == min(year)])/pittotal_count[year == min(year)],
+              sheltered_change = `Sheltered Total Homeless`[year == max(year)] - `Sheltered Total Homeless`[year == min(year)],
+              sheltered_pct_change = (`Sheltered Total Homeless`[year == max(year)] - `Sheltered Total Homeless`[year == min(year)])/`Sheltered Total Homeless`[year == min(year)],
+              unsheltered_change = `Unsheltered Homeless`[year == max(year)] - `Unsheltered Homeless`[year == min(year)],
+              unsheltered_pct_change = (`Unsheltered Homeless`[year == max(year)] - `Unsheltered Homeless`[year == min(year)])/`Unsheltered Homeless`[year == min(year)],
+              hdis_change = hdistotal_count[year == max(year)] - hdistotal_count[year == min(year)],
+              hdis_pct_change = (hdistotal_count[year == max(year)] - hdistotal_count[year == min(year)])/hdistotal_count[year == min(year)],
+              permhousing_change = total_permanent_housing[year == max(year)] - total_permanent_housing[year == min(year)],
+              permhousing_pct_change = (total_permanent_housing[year == max(year)] - total_permanent_housing[year == min(year)])/total_permanent_housing[year == min(year)], 
+              shelter_change = `Total Year-Round Beds (ES, TH, SH)`[year == max(year)] - `Total Year-Round Beds (ES, TH, SH)`[year == min(year)],
+              shelter_pct_change = (`Total Year-Round Beds (ES, TH, SH)`[year == max(year)] - `Total Year-Round Beds (ES, TH, SH)`[year == min(year)])/`Total Year-Round Beds (ES, TH, SH)`[year == min(year)], 
+              COC_Name = `CoC Name`
+                  )
+PITandHDISchange <- distinct(PITandHDISchange) 
+```
+looking for trends 
+
+```{r}
+
+PITandHDISchange[PITandHDISchange$LOCATION_ID != "All",] %>% 
+    filter(permhousing_pct_change < 5 & permhousing_pct_change > -0.9) %>%
+ggplot(aes(x = permhousing_pct_change, y = pit_pct_change)) +
+    geom_point(color = "blue", size = 2) +
+    geom_smooth(method = "lm", se = TRUE, color = "red") +
+    geom_text(aes(label = COC_Name),
+              size = 1.9) +
+    labs(
+        x = "percentage change in permanent housing 2019 - 2023 by Coc",
+        y = "percentage change in PIT totals 2019 - 2023 by CoC",
+        title = "relationship between rate of permanent housing development and total homelessness"
+    )
+```
+comparing to change in FMR
+```{r}
+countyname_vector <- c("NA", "Santa Clara County", "San Francisco County", "Alameda County", "Sacramento County", "Sonoma County", "Contra Costa County", "NA", "Marin County", "Santa Cruz County", "Mendocino County", "Stanislaus County", "San Joaquin County", "San Mateo County", "NA", "NA", "Placer County", "NA", "Napa County", "Solano County","Butte County", "Merced County", "Yolo County", "Humboldt County", "NA", "NA", "El Dorado County", "NA", "Tehama County", "Lake County", "NA", "Nevada County", "Los Angeles County", "San Diego County", "Orange County", "Santa Barbara County", "Kern County", "NA", "NA", "Riverside County", "San Bernadino", "Ventura County", "NA", "Imperial County", "San Luis Obispo")
+PITandHDISchange$County_Name <- countyname_vector
+
 
