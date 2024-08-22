@@ -3,7 +3,7 @@ title: "alameda older adult homelessness"
 author: "Harrison Linder"
 date: "`r Sys.Date()`"
 output: html_document
----
+--- 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -11,6 +11,7 @@ library(readxl)
 library(dplyr)
 library(ggplot2)
 library(reshape2)
+library(scales)
 ```
 ## data sources
 I am using two main data sources. The first is PIT and HIC count data from HUD. This includes statistics collected during the annual Point in Time (PIT) counts and the annual counts of shelter and permanent housing available in each Continuum of Care (CoC). The specific PIT data table used was created in excel by me using excel data from HUD's website. The second data sources comes from California's HDIS data and is directly queried from their website. I look at 5 years of data from 2019 to 2023. At the time of this analysis, the 2023 data was the latest available.
@@ -23,11 +24,89 @@ HDISdata$EXPERIENCING_HOMELESSNESS_CNT <- as.numeric(HDISdata$EXPERIENCING_HOMEL
 ```
 ```{r}
 ggplot(HDISdata[HDISdata$LOCATION_ID == "CA-502" & HDISdata$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = EXPERIENCING_HOMELESSNESS_CNT, color = AGE_GROUP_PUBLIC, group = AGE_GROUP_PUBLIC)) +
-  geom_line(size = 1) +  # Draw the lines
-  geom_point(size = 2) +  # Add points to the lines
+  geom_line(size = .3) +  # Draw the lines
+  geom_point(size = 1) +  # Add points to the lines
+  geom_text(aes(label = EXPERIENCING_HOMELESSNESS_CNT),
+              size = 3, vjust = -1, position = position_jitter(width = .1, height = .5)) +
   labs(
     x = "Year",
     y = "Alameda HDIS Homeless Count by Age",
     title = "Alameda Homeless Population Counts Over Time"
+  )
+```
+```{r creating age tranches}
+HDISdata <- HDISdata %>%
+    mutate(
+        combined_age_group = case_when(
+        AGE_GROUP_PUBLIC %in% c("Under 18", "18-24", "25-34", "35-44", "45-54") ~ "Under 55",
+        AGE_GROUP_PUBLIC %in% c("55-64", "65+") ~ "55+",
+        AGE_GROUP_PUBLIC %in% "Unknown" ~ "Unknown"
+       )
+    )
+```
+
+```{r adding a proportion variable}
+HDISdata <-HDISdata %>%
+    mutate(EXPERIENCING_HOMELESSNESS_CNT = ifelse(is.na(EXPERIENCING_HOMELESSNESS_CNT),0, EXPERIENCING_HOMELESSNESS_CNT))
+
+HDIStotals <- HDISdata %>%
+    group_by(CALENDAR_YEAR, LOCATION_ID, LOCATION) %>% 
+    summarise(total_homeless = sum(EXPERIENCING_HOMELESSNESS_CNT)) 
+
+HDISdata <- HDISdata %>%
+    left_join(HDIStotals)
+
+HDISdata <- HDISdata %>%
+    mutate(age_pct_oftotal = EXPERIENCING_HOMELESSNESS_CNT/total_homeless)
+
+```
+
+```{r}
+ggplot(HDISdata[HDISdata$LOCATION_ID == "CA-502" & HDISdata$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = age_pct_oftotal, color = AGE_GROUP_PUBLIC, group = AGE_GROUP_PUBLIC)) +
+  geom_line(size = .3) +  # Draw the lines
+  geom_point(size = 1) +  # Add points to the lines
+  geom_text(aes(label = percent(age_pct_oftotal, accuracy = 0.1)),
+              size = 3, vjust = -1, position = position_jitter(width = 0.3, height = 0.01)) +
+  labs(
+    x = "Year",
+    y = "Alameda HDIS Homeless Proportion by Age",
+    title = "Alameda Homeless Age Proportions Over Time"
+  )
+```
+
+```{r combining age tranches for simplified data}
+HDISsimple <- HDISdata %>%
+    group_by(CALENDAR_YEAR, LOCATION_ID, LOCATION, combined_age_group) %>%
+    summarise(
+        homelessness_count = sum(EXPERIENCING_HOMELESSNESS_CNT),
+        age_pct_oftotal_summ = sum(age_pct_oftotal)
+              )
+```
+
+
+
+```{r}
+ggplot(HDISsimple[HDISsimple$LOCATION_ID == "CA-502" & HDISsimple$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = homelessness_count, color = combined_age_group, group = combined_age_group)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+  geom_text(aes(label = homelessness_count),
+              size = 3, vjust = -1, position = "dodge") +
+  labs(
+    x = "Year",
+    y = "Alameda HDIS Homeless Count by Age",
+    title = "Alameda Homeless Population Counts Over Time"
+  )
+```
+
+```{r}
+ggplot(HDISsimple[HDISsimple$LOCATION_ID == "CA-502" & HDISsimple$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = age_pct_oftotal_summ, color = combined_age_group, group = combined_age_group)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+    geom_text(aes(label = percent(age_pct_oftotal_summ, accuracy = 0.1)),
+              size = 3, vjust = -1) +
+  labs(
+    x = "Year",
+    y = "Alameda HDIS Homeless Proportion by Age",
+    title = "Alameda Homeless Age Proportion Over Time"
   )
 ```
