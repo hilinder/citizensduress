@@ -1,0 +1,169 @@
+---
+title: "Alameda older adult homelessness"
+author: "Harrison Linder"
+date: "`r Sys.Date()`"
+output: html_document
+--- 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(scales)
+```
+## data sources
+All data comes from the state of California's online published data from the Homeless Data Integration System
+```{r reading data}
+
+
+HDISdata <- read.csv("https://data.ca.gov/dataset/c7ed1ae4-4f93-4fc7-b603-3cd07a55d862/resource/b1a5ae24-5842-425c-b56c-aa90f8f1c767/download/homelessness-count-by-age.csv")
+
+HDISdata$EXPERIENCING_HOMELESSNESS_CNT <- as.numeric(HDISdata$EXPERIENCING_HOMELESSNESS_CNT) # making the count a numeric vector instead of a character vector
+```
+
+
+
+
+
+```{r}
+ggplot(HDISdata[HDISdata$LOCATION_ID == "CA-502" & HDISdata$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = EXPERIENCING_HOMELESSNESS_CNT, color = AGE_GROUP_PUBLIC, group = AGE_GROUP_PUBLIC)) +
+  geom_line(size = .3) +  # Draw the lines
+  geom_point(size = 1) +  # Add points to the lines
+  geom_text(aes(label = EXPERIENCING_HOMELESSNESS_CNT),
+              size = 3, vjust = -1, position = position_jitter(width = .1, height = .5)) +
+  labs(
+    x = "Year",
+    y = "Alameda HDIS Homeless Count by Age",
+    title = "Alameda Homeless Population Counts Over Time"
+  )
+```
+
+
+
+This chart plots Alameda's HDIS counts by age category from 2017 to 2023. Apologies for the data point labels overlapping a bit. There is not an easy way to separate them in a coherent manner. Noteworthy trends are that 65+ homelessness more than tripled most age groups from 25 to 64 doubled to 2.5xed, and under 18 and 18 to 24 remained approximately flat
+
+
+
+
+```{r creating age tranches}
+HDISdata <- HDISdata %>%
+    mutate(
+        combined_age_group = case_when(
+        AGE_GROUP_PUBLIC %in% c("Under 18", "18-24", "25-34", "35-44", "45-54") ~ "Under 55",
+        AGE_GROUP_PUBLIC %in% c("55-64", "65+") ~ "55+",
+        AGE_GROUP_PUBLIC %in% "Unknown" ~ "Unknown"
+       )
+    )
+```
+
+```{r adding a proportion variable}
+HDISdata <-HDISdata %>%
+    mutate(EXPERIENCING_HOMELESSNESS_CNT = ifelse(is.na(EXPERIENCING_HOMELESSNESS_CNT),0, EXPERIENCING_HOMELESSNESS_CNT))
+
+HDIStotals <- HDISdata %>%
+    group_by(CALENDAR_YEAR, LOCATION_ID, LOCATION) %>% 
+    summarise(total_homeless = sum(EXPERIENCING_HOMELESSNESS_CNT)) 
+
+HDISdata <- HDISdata %>%
+    left_join(HDIStotals)
+
+HDISdata <- HDISdata %>%
+    mutate(age_pct_oftotal = EXPERIENCING_HOMELESSNESS_CNT/total_homeless)
+
+```
+
+
+
+
+
+
+
+
+```{r}
+ggplot(HDISdata[HDISdata$LOCATION_ID == "CA-502" & HDISdata$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = age_pct_oftotal, color = AGE_GROUP_PUBLIC, group = AGE_GROUP_PUBLIC)) +
+  geom_line(size = .3) +  # Draw the lines
+  geom_point(size = 1) +  # Add points to the lines
+  geom_text(aes(label = percent(age_pct_oftotal, accuracy = 0.1)),
+              size = 3, vjust = -1, position = position_jitter(width = 0.3, height = 0.01)) +
+  labs(
+    x = "Year",
+    y = "Alameda HDIS Homeless Proportion by Age",
+    title = "Alameda Homeless Age Proportions Over Time"
+  )
+```
+
+
+
+This chart plots each age category as a percentage of the total homeless population. 65+ went from 4.3 percent in 2017 to 6.6 percent in 2023. 55 to 64 went from 13.3 percent to 15.6 percent. However, these two categories are down from their highs in 2021 of 8 percent and 18.3 percent, respectively.
+
+
+
+
+
+
+
+
+
+
+```{r combining age tranches for simplified data}
+HDISsimple <- HDISdata %>%
+    group_by(CALENDAR_YEAR, LOCATION_ID, LOCATION, combined_age_group) %>%
+    summarise(
+        homelessness_count = sum(EXPERIENCING_HOMELESSNESS_CNT),
+        age_pct_oftotal_summ = sum(age_pct_oftotal)
+              )
+```
+
+
+
+
+
+
+
+
+
+```{r}
+ggplot(HDISsimple[HDISsimple$LOCATION_ID == "CA-502" & HDISsimple$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = homelessness_count, color = combined_age_group, group = combined_age_group)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+  geom_text(aes(label = homelessness_count),
+              size = 3, vjust = -1, position = "dodge") +
+  labs(
+    x = "Year",
+    y = "Alameda HDIS Homeless Count by Age",
+    title = "Alameda Homeless Population Counts Over Time"
+  )
+```
+
+
+
+
+This chart combines the data source's provided age categories into 2 major categories: 55+ and under 55. You'll see that 55+ nearly tripled, while under 55 approximately doubled.
+
+
+
+
+
+
+
+
+
+```{r}
+ggplot(HDISsimple[HDISsimple$LOCATION_ID == "CA-502" & HDISsimple$CALENDAR_YEAR != "2024",], aes(x = factor(CALENDAR_YEAR), y = age_pct_oftotal_summ, color = combined_age_group, group = combined_age_group)) +
+  geom_line(size = 1) +  # Draw the lines
+  geom_point(size = 2) +  # Add points to the lines
+    geom_text(aes(label = percent(age_pct_oftotal_summ, accuracy = 0.1)),
+              size = 3, vjust = -1) +
+  labs(
+    x = "Year",
+    y = "Alameda HDIS Homeless Proportion by Age",
+    title = "Alameda Homeless Age Proportion Over Time"
+  )
+```
+
+
+
+
+This chart shows the percentage makeup of the 2 major age categories over time. 55+ increased to 22.2 percent in 2023 from 17.6 percent in 2017, though it is down from its peak in 2021 of 26.2 percent
