@@ -14,7 +14,9 @@ library(reshape2)
 library(scales)
 ```
 ## data sources
-All data comes from the state of California's online published data from the Homeless Data Integration System
+### All data comes from the state of California's online published data from the Homeless Data Integration System
+
+### don't worry about anything in the gray boxes. Just pay attention to the charts and the words that come after them.
 ```{r reading data}
 
 
@@ -42,7 +44,7 @@ ggplot(HDISdata[HDISdata$LOCATION_ID == "CA-502" & HDISdata$CALENDAR_YEAR != "20
 
 
 
-This chart plots Alameda's HDIS counts by age category from 2017 to 2023. Apologies for the data point labels overlapping a bit. There is not an easy way to separate them in a coherent manner. Noteworthy trends are that 65+ homelessness more than tripled most age groups from 25 to 64 doubled to 2.5xed, and under 18 and 18 to 24 remained approximately flat
+### This chart plots Alameda's HDIS counts by age category from 2017 to 2023. Apologies for the data point labels overlapping a bit. There is not an easy way to separate them in a coherent manner. Noteworthy trends are that 65+ homelessness more than tripled most age groups from 25 to 64 doubled to 2.5xed, and under 18 and 18 to 24 remained approximately flat
 
 
 
@@ -96,7 +98,7 @@ ggplot(HDISdata[HDISdata$LOCATION_ID == "CA-502" & HDISdata$CALENDAR_YEAR != "20
 
 
 
-This chart plots each age category as a percentage of the total homeless population. 65+ went from 4.3 percent in 2017 to 6.6 percent in 2023. 55 to 64 went from 13.3 percent to 15.6 percent. However, these two categories are down from their highs in 2021 of 8 percent and 18.3 percent, respectively.
+### This chart plots each age category as a percentage of the total homeless population. 65+ went from 4.3 percent in 2017 to 6.6 percent in 2023. 55 to 64 went from 13.3 percent to 15.6 percent. However, these two categories are down from their highs in 2021 of 8 percent and 18.3 percent, respectively.
 
 
 
@@ -140,7 +142,7 @@ ggplot(HDISsimple[HDISsimple$LOCATION_ID == "CA-502" & HDISsimple$CALENDAR_YEAR 
 
 
 
-This chart combines the data source's provided age categories into 2 major categories: 55+ and under 55. You'll see that 55+ nearly tripled, while under 55 approximately doubled.
+### This chart combines the data source's provided age categories into 2 major categories: 55+ and under 55. You'll see that 55+ nearly tripled, while under 55 approximately doubled.
 
 
 
